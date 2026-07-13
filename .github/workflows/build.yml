@@ -1,0 +1,33 @@
+name: Build ChunkMirror
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Install Gradle 8.7
+        run: |
+          curl -fsSL https://services.gradle.org/distributions/gradle-8.7-bin.zip -o gradle-8.7-bin.zip
+          unzip -q gradle-8.7-bin.zip
+      - name: Reconstruct source archive
+        run: |
+          cat source/chunkmirror.b64.part1 source/chunkmirror.b64.part2 | base64 --decode > chunkmirror-source.zip
+          unzip -t chunkmirror-source.zip
+          unzip -q chunkmirror-source.zip
+          mv chunkmirror-fabric-1.20.1 chunkmirror
+      - name: Build remapped Fabric jar
+        working-directory: chunkmirror
+        run: ../gradle-8.7/bin/gradle build --stacktrace
+      - uses: actions/upload-artifact@v4
+        with:
+          name: chunkmirror-1.20.1
+          path: chunkmirror/build/libs/*.jar
